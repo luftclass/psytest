@@ -86,11 +86,9 @@ questions = [
 # 콜백 함수 (선택 즉시 다음 문제로 넘어가는 로직)
 # --------------------------------------------------------------------------------
 def go_next():
-    # 현재 질문의 인덱스와 선택한 값 가져오기
     idx = st.session_state.current_idx
     selected_val = st.session_state[f"q_{idx}"]
     
-    # 점수 반영
     q_type = questions[idx][1]
     
     if q_type == "lie":
@@ -100,7 +98,6 @@ def go_next():
     else:
         st.session_state.main_score += selected_val
     
-    # 다음 인덱스로 이동 또는 종료
     if idx + 1 < len(questions):
         st.session_state.current_idx += 1
     else:
@@ -120,7 +117,7 @@ st.markdown("---")
 # --------------------------------------------------------------------------------
 if st.session_state.finished:
     with st.spinner("결과 분석 중입니다..."):
-        time.sleep(0.5) # 잠시 로딩 효과
+        time.sleep(0.5)
 
     lie_score = st.session_state.lie_score
     main_score = st.session_state.main_score
@@ -129,16 +126,18 @@ if st.session_state.finished:
     # 1. 신뢰도 검증 실패
     if lie_score >= 16 or lie_detected:
         st.error(f"🚫 **진단 불가 (신뢰도 저하)**")
-        reason = "결정적 모순 응답(Lie Scale 5점)" if lie_detected else f"타당도 총점 초과 ({lie_score}/25점)"
-        st.write(f"**원인:** {reason}")
         
         st.markdown("""
         **[분석 오류: 사회적 바람직성 편향 (Social Desirability Bias)]**
         
-        응답 데이터에서 본인의 모습을 지나치게 이상적인 학습자로 포장하려는 방어 기제가 감지되었습니다.
-        (예: "태어나서 한 번도 공부가 싫은 적이 없다" 등 인지적 갈등을 전면 부정)
+        응답 데이터에서 본인의 실제 모습보다 이상적이거나 완벽한 학습자로 포장하려는 방어 기제가 감지되었습니다.
         
-        이 상태에서는 메타인지와 학습 습관을 정확히 분석할 수 없습니다. **솔직한 태도로 재검사를 권장합니다.**
+        **⚠️ 구체적인 원인 분석:**
+        인간의 뇌는 새로운 지식을 습득하거나 어려운 과제에 직면할 때 필연적으로 **'인지적 갈등(Cognitive Conflict)'**과 **'정서적 저항'**을 경험합니다.
+        
+        그러나 귀하의 응답은 **"태어나서 한 번도 공부가 싫은 적이 없다"**와 같이 학습 과정에서 발생하는 자연스러운 갈등과 스트레스를 **전면 부정**하고 있습니다. 이는 메타인지(Metacognition)가 작동하지 않고 있음을 시사합니다.
+        
+        정확한 진단을 위해 본인의 취약한 점까지 솔직하게 인정하는 태도로 **재검사를 권장합니다.**
         """)
         
     # 2. 결과 분석 성공
@@ -285,5 +284,5 @@ else:
         }[x],
         index=None,
         key=f"q_{idx}",
-        on_change=go_next # 선택 즉시 콜백 함수 실행
+        on_change=go_next
     )
