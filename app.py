@@ -61,6 +61,12 @@ st.markdown("""
     }
     .stRadio label {
         font-size: 18px !important;
+        padding: 10px;
+        border-radius: 10px;
+        transition: background-color 0.3s;
+    }
+    .stRadio label:hover {
+        background-color: #f0f2f6;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -107,7 +113,6 @@ if st.session_state.finished:
     main_score = st.session_state.main_score
     
     # 0. 신뢰도 검증 실패 (히든 유형: 카멜레온)
-    # 3문항 중 11점 이상이면(거의 다 4~5점 체크) 거짓 응답으로 간주
     if lie_score >= 11:
         st.markdown('<div class="result-card">', unsafe_allow_html=True)
         st.markdown('<div class="animal-emoji">🦎</div>', unsafe_allow_html=True)
@@ -124,7 +129,7 @@ if st.session_state.finished:
         """)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # 1. 결과 분석 성공 (본 질문 12문항 * 5점 = 60점 만점)
+    # 1. 결과 분석 성공
     else:
         # Level 1: 순수 이타주의 (~21점)
         if main_score <= 21:
@@ -205,13 +210,13 @@ if st.session_state.finished:
         st.rerun()
 
 # --------------------------------------------------------------------------------
-# B. 질문 진행 화면
+# B. 질문 진행 화면 (수정됨: 자동 넘기기 적용)
 # --------------------------------------------------------------------------------
 else:
+    # 진행률 표시
     idx = st.session_state.current_idx
     q_text, q_type = questions[idx]
     
-    # 진행률
     progress = int((idx / len(questions)) * 100)
     st.progress(progress, text=f"본능 탐색 중... {progress}%")
     
@@ -221,9 +226,28 @@ else:
             {q_text}
         </div>
     """, unsafe_allow_html=True)
-    
+
+    # ---[핵심 변경 사항] 콜백 함수 정의---
+    def handle_click():
+        """라디오 버튼 선택 시 실행되는 함수"""
+        # 현재 질문의 키값(q_{idx})으로 선택된 값을 가져옴
+        current_val = st.session_state[f"q_{idx}"]
+        
+        # 점수 합산
+        if q_type == "lie":
+            st.session_state.lie_score += current_val
+        else:
+            st.session_state.main_score += current_val
+            
+        # 다음 인덱스로 이동하거나 종료 처리
+        if st.session_state.current_idx + 1 < len(questions):
+            st.session_state.current_idx += 1
+        else:
+            st.session_state.finished = True
+
     # 답변 선택 (라디오 버튼)
-    choice = st.radio(
+    # on_change=handle_click 을 추가하여 선택 즉시 함수가 실행되게 함
+    st.radio(
         "솔직하게 선택해주세요 👇",
         options=[1, 2, 3, 4, 5],
         format_func=lambda x: {
@@ -233,23 +257,9 @@ else:
             4: "그렇다 (4점)",
             5: "매우 그렇다 (5점)"
         }[x],
-        index=None,
-        key=f"q_{idx}"
+        index=None,         # 초기 선택 없음
+        key=f"q_{idx}",     # 고유 키
+        on_change=handle_click  # 선택 시 자동 실행
     )
     
-    # 다음 버튼
-    if st.button("다음 질문 >", type="primary", use_container_width=True):
-        if choice is None:
-            st.warning("⚠️ 답변을 선택해주세요!")
-        else:
-            if q_type == "lie":
-                st.session_state.lie_score += choice
-            else:
-                st.session_state.main_score += choice
-            
-            if idx + 1 < len(questions):
-                st.session_state.current_idx += 1
-                st.rerun()
-            else:
-                st.session_state.finished = True
-                st.rerun()
+    # 더 이상 '다음' 버튼이 필요 없음
