@@ -1,24 +1,22 @@
 import streamlit as st
 
-# 1. 페이지 기본 설정
-st.set_page_config(page_title="심층 성향 분석 리포트", page_icon="🧠", layout="centered")
+# 1. 페이지 설정
+st.set_page_config(page_title="심층 성향 분석 리포트 (Pro)", page_icon="🧠", layout="centered")
 
-# 2. CSS 스타일링 (다크 모드 호환성 패치)
+# 2. CSS 스타일링 (다크모드 완벽 지원 + 가독성)
 st.markdown("""
     <style>
     .main-header {font-size: 30px; font-weight: bold; margin-bottom: 10px;}
-    .sub-header {font-size: 20px; font-weight: bold; margin-top: 20px;}
     .result-box {
         padding: 20px; 
-        border-radius: 10px; 
+        border-radius: 12px; 
         margin-bottom: 20px;
         background-color: #f8f9fa; 
-        border: 1px solid #ddd;
-        color: #333333 !important; /* 다크 모드에서도 글자색 검정 고정 */
+        border: 1px solid #e9ecef;
+        color: #333333 !important; /* 다크모드 글자색 패치 */
     }
-    .highlight {font-weight: bold; color: #1E88E5;}
-    /* 라디오 버튼 폰트 크기 키우기 */
-    .stRadio label {font-size: 18px !important;}
+    .stRadio label {font-size: 17px !important;}
+    .big-score {font-size: 24px; font-weight: bold; color: #1565C0;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -32,7 +30,7 @@ if 'main_score' not in st.session_state:
 if 'finished' not in st.session_state:
     st.session_state.finished = False
 
-# 4. 질문 데이터 (25문항)
+# 4. 질문 데이터 (총 25문항: 타당성 4 + 본질문 21)
 questions = [
     ("1. 사소한 마찰이 생겼을 때, 굳이 상황을 키우기보다 조용히 넘어가는 편이 더 효율적이라고 느낀다.", "main"),
     ("2. 나는 살면서 단 한 번도, 상황을 모면하기 위해 사소한 거짓말이나 핑계를 대본 적이 없다.", "lie"),
@@ -61,96 +59,88 @@ questions = [
     ("25. 장기적으로는 과정도 중요하지만, 결국 사람들은 결과로 평가받는다고 생각한다.", "main")
 ]
 
-# 제목 표시
-st.title("🧠 성향 및 가치관 심층 분석")
+# 제목
+st.title("🧠 성향 및 가치관 정밀 분석")
 st.markdown("---")
 
 # --------------------------------------------------------------------------------
-# 결과 화면
+# 결과 화면 (5단계 세분화)
 # --------------------------------------------------------------------------------
 if st.session_state.finished:
     lie_score = st.session_state.lie_score
     main_score = st.session_state.main_score
     
-    # 1. 신뢰도 검증 실패 (임계치 16점)
+    # 1. 신뢰도 검증 실패 (4문항 * 4점 = 16점 이상)
     if lie_score >= 16:
         st.error(f"⚠️ **프로파일링 불가 (Invalid Profile)**")
         st.write(f"**타당도 척도(L-Scale):** {lie_score}점 (임계치 16점 초과)")
-        
         st.markdown("""
-        ### 🔍 분석: 사회적 바람직성 편향 (Social Desirability Bias)
-        귀하의 응답 패턴에서 **'긍정적 가장(Faking Good)'** 경향이 강하게 감지되었습니다. 
-        이는 타인에게 도덕적이고 완벽한 모습으로 비치고자 하는 무의식적 방어기제가 작동했음을 시사합니다.
+        **[분석 실패: 사회적 바람직성 편향]**
+        응답 데이터에서 본인을 지나치게 도덕적으로 포장하려는 방어 기제가 감지되었습니다.
+        (예: 인간이라면 누구나 겪는 감정조차 부정함)
         
-        * **현상:** 인간이라면 누구나 겪는 보편적인 실수나 부정적 감정까지 전면 부인하고 있습니다.
-        * **결론:** 현재 데이터로는 귀하의 심층 성향을 정확히 파악할 수 없습니다. 솔직한 태도로 재검사를 권장합니다.
+        이 상태에서는 정확한 성향 분석이 불가능합니다. **솔직한 태도로 재검사를 권장합니다.**
         """)
-
-    # 2. 결과 분석 성공
+        
+    # 2. 결과 분석 성공 (본문항 21개 * 5점 = 105점 만점)
     else:
-        # A. 하위 구간 (이타주의자)
-        if main_score <= 45:
-            st.success("🌿 **공감적 관계 지향형 (Empathic Altruist)**")
-            st.caption(f"성향 지수: {main_score} / 105")
-            
-            with st.expander("📊 심층 심리 프로파일링 (자세히 보기)", expanded=True):
+        # Level 1: 극도의 이타주의 (21 ~ 38점)
+        if main_score <= 38:
+            st.success("🌿 **순수 공감적 이타주의자 (Pure Altruist)**")
+            st.caption(f"성향 지수: {main_score} / 105 (매우 낮음)")
+            with st.expander("📊 상세 심리 리포트 확인", expanded=True):
                 st.markdown("""
-                **1. 핵심 기제: 정서적 전염(Emotional Contagion) 및 거울 뉴런 활성**
-                귀하는 타인의 감정을 자신의 것처럼 느끼는 **정서적 공감(Affective Empathy)** 능력이 매우 발달해 있습니다. 
-                '거울 뉴런(Mirror Neurons)' 시스템이 활발하여 타인의 고통을 목격할 때 본능적인 불편감을 느낍니다.
-
-                **2. 행동 특성: 친사회적 행동(Prosocial Behavior)**
-                * **우호성(Agreeableness):** Big 5 성격 요인 중 우호성이 매우 높습니다.
-                * **죄책감 민감성:** 도덕적 규범을 어겼을 때 느끼는 내적 처벌(죄책감) 기제가 강력하게 작동합니다.
-                
-                **3. 잠재적 위험: 공감적 고통(Empathic Distress)**
-                타인의 감정에 과도하게 몰입하여 자아(Self)와 타자(Other)의 경계가 모호해질 수 있습니다. 
-                이는 관계에서의 **'심리적 소진(Burnout)'**으로 이어질 위험이 있습니다.
-                
-                **💡 솔루션:** **자기 주장 훈련(Assertiveness Training)**이 필요합니다. 거절은 공격이 아니라 '경계 설정'임을 인지하세요.
+                * **핵심 특성:** 자아(Self)보다 타자(Other)를 우선시하는 경향이 극도로 강합니다. 거울 뉴런이 과활성화되어 있어 타인의 고통을 자신의 것처럼 느낍니다.
+                * **행동 패턴:** 갈등 상황에서 100% 양보하며, 자신의 이익을 챙기는 것에 죄책감을 느낍니다. '성인군자'라는 평을 듣습니다.
+                * **⚠️ 주의:** **병리적 이타주의(Pathological Altruism)**로 흐를 위험이 있습니다. 타인에게 이용당하기 쉬우며, 심리적 소진(Burnout)이 빨리 옵니다.
                 """)
 
-        # B. 중위 구간 (현실주의자)
-        elif main_score <= 75:
-            st.info("⚖️ **적응적 실용주의자 (Adaptive Pragmatist)**")
-            st.caption(f"성향 지수: {main_score} / 105")
-            
-            with st.expander("📊 심층 심리 프로파일링 (자세히 보기)", expanded=True):
+        # Level 2: 사회적 협력자 (39 ~ 55점)
+        elif main_score <= 55:
+            st.info("🤝 **조화로운 사회적 협력자 (Harmonious Cooperator)**")
+            st.caption(f"성향 지수: {main_score} / 105 (낮음)")
+            with st.expander("📊 상세 심리 리포트 확인", expanded=True):
                 st.markdown("""
-                **1. 핵심 기제: 인지적 유연성(Cognitive Flexibility)**
-                귀하는 상황에 따라 도덕적 원칙과 실리적 이익 사이에서 최적의 균형을 찾는 능력이 탁월합니다. 
-                이는 심리학적으로 **'자아 강도(Ego Strength)'**가 건강하여 현실 검증력(Reality Testing)이 뛰어남을 의미합니다.
-
-                **2. 행동 특성: 도구적/정서적 관계의 조화**
-                * **상황 맥락적 사고:** 절대적인 규칙보다는 상황의 맥락(Context)을 중시합니다.
-                * **적응적 대처:** 문제가 발생했을 때 감정에 매몰되지 않고 해결책을 모색하는 **문제 중심 대처(Problem-Focused Coping)**를 선호합니다.
-                
-                **3. 잠재적 위험: 기회주의적 처세**
-                지나친 유연함은 타인에게 '일관성 부재'로 비칠 수 있습니다. 장기적인 신뢰 관계(Rapport) 형성을 위해, 결정적인 순간에는 손해를 감수하더라도 원칙을 지키는 모습을 보여주는 전략이 필요합니다.
+                * **핵심 특성:** 높은 우호성(Agreeableness)을 바탕으로 공동체의 규칙과 화합을 중요시합니다. 도덕적 민감성이 높아 원칙을 잘 지킵니다.
+                * **행동 패턴:** 융통성보다는 정직함을 선호합니다. 주변 사람들에게 '믿을 수 있는 사람', '착한 사람'으로 신뢰를 얻습니다.
+                * **⚠️ 주의:** 지나치게 원칙을 고수하다가 융통성 없다는 평가를 받을 수 있습니다. 가끔은 '건강한 이기심'도 필요합니다.
                 """)
 
-        # C. 상위 구간 (전략가/마키아벨리즘)
+        # Level 3: 적응적 현실주의자 (56 ~ 72점)
+        elif main_score <= 72:
+            st.info("⚖️ **적응적 현실주의자 (Adaptive Realist)**")
+            st.caption(f"성향 지수: {main_score} / 105 (보통)")
+            with st.expander("📊 상세 심리 리포트 확인", expanded=True):
+                st.markdown("""
+                * **핵심 특성:** 가장 균형 잡힌 유형입니다. 상황에 따라 도덕적 명분과 실리적 이익 사이에서 유연하게 스위칭(Switching) 할 수 있습니다.
+                * **행동 패턴:** 평소에는 도덕적이지만, 손해가 큰 상황에서는 합리적인 핑계를 찾아 실리를 챙깁니다. 사회 적응력이 가장 뛰어납니다.
+                * **⚠️ 주의:** 일관성이 부족해 보일 수 있습니다. 중요한 가치관에 대해서는 타협하지 않는 모습을 보여주는 것이 장기적 신뢰에 도움이 됩니다.
+                """)
+
+        # Level 4: 합리적 전략가 (73 ~ 89점)
+        elif main_score <= 89:
+            st.warning("♟️ **냉철한 합리적 전략가 (Rational Strategist)**")
+            st.caption(f"성향 지수: {main_score} / 105 (높음)")
+            with st.expander("📊 상세 심리 리포트 확인", expanded=True):
+                st.markdown("""
+                * **핵심 특성:** 감정을 '비효율적인 데이터'로 간주합니다. 문제 해결과 목표 달성을 최우선 가치로 두며, 계산적 사고가 빠릅니다.
+                * **행동 패턴:** 규범을 지키긴 하지만, 그것이 나에게 이득이 될 때만 지킵니다. 불필요한 감정 소모를 차단하고 성과를 냅니다.
+                * **⚠️ 주의:** '정이 없다', '계산적이다'라는 평가를 받을 수 있습니다. 업무적 능력은 인정받지만, 인간적인 매력은 떨어질 수 있으니 공감하는 척(Social Skill)이라도 필요합니다.
+                """)
+
+        # Level 5: 마키아벨리적 지배자 (90 ~ 105점)
         else:
-            st.warning("♟️ **마키아벨리적 전략가 (Machiavellian Strategist)**")
-            st.caption(f"성향 지수: {main_score} / 105 (High Tendency)")
-            
-            with st.expander("📊 심층 심리 프로파일링 (자세히 보기)", expanded=True):
+            st.error("🦅 **마키아벨리적 지배자 (Machiavellian Ruler)**")
+            st.caption(f"성향 지수: {main_score} / 105 (매우 높음)")
+            with st.expander("📊 상세 심리 리포트 확인", expanded=True):
                 st.markdown("""
-                **1. 핵심 기제: 정서적 분리(Emotional Detachment) 및 합리화**
-                귀하는 의사결정 과정에서 감정적 요소를 배제하고 '효율성'을 최우선 가치로 둡니다. 
-                자신의 행동을 논리적으로 정당화하는 **인지적 재구조화(Cognitive Restructuring)** 능력이 매우 뛰어납니다.
-
-                **2. 행동 특성: 도구적 관계(Instrumental Relationship)**
-                * **목적 지향성:** 타인을 감정 교류의 대상보다는 목표 달성을 위한 '자원(Resource)'으로 인식하는 경향이 있습니다.
-                * **낮은 정서적 공감:** 타인의 고통을 인지적(머리)으로는 이해하지만, 정서적(가슴)으로는 크게 동요하지 않습니다. 이는 위기 상황에서 **냉철한 리더십**으로 발현되기도 합니다.
-                
-                **3. 잠재적 위험: 착취적 상호작용**
-                단기적인 성과는 탁월하나, 장기적으로는 **'진정성 결여'**로 인해 사회적 고립을 초래할 수 있습니다. 
-                전술적 공감(Tactical Empathy)을 넘어서, 진심 어린 소통을 연습하는 것이 귀하의 성공을 지속시키는 핵심 열쇠입니다.
+                * **핵심 특성:** 도구적 합리성(Instrumental Rationality)이 극대화된 상태입니다. 타인을 목적 달성을 위한 '자원'으로 인식하며, 조종(Manipulation)에 능숙합니다.
+                * **행동 패턴:** 죄책감 없이 거짓말을 전략적으로 사용합니다. 위기 상황에서 감정에 휘둘리지 않고 가장 냉혹하고 효율적인 판단을 내립니다.
+                * **⚠️ 주의:** 단기적으로는 성공할 수 있으나, 장기적으로는 **사회적 고립**을 초래할 수 있습니다. 진정성 없는 관계는 결국 무너짐을 명심해야 합니다.
                 """)
 
     # 재시작 버튼
-    if st.button("🔄 테스트 다시 하기"):
+    if st.button("🔄 테스트 다시 하기", type="secondary"):
         st.session_state.current_idx = 0
         st.session_state.lie_score = 0
         st.session_state.main_score = 0
@@ -166,12 +156,12 @@ else:
     
     # 진행률
     progress = int((idx / len(questions)) * 100)
-    st.progress(progress, text=f"Question {idx + 1} / {len(questions)}")
+    st.progress(progress, text=f"분석 진행률 {progress}%")
     
-    # 질문 박스 (다크모드 패치: 글자색 강제 검정)
+    # 질문 박스
     st.markdown(f"""
         <div class="result-box">
-            <p style="font-size: 18px; text-align: center; margin: 0; font-weight: 500;">{q_text}</p>
+            <p style="font-size: 20px; text-align: center; margin: 0; font-weight: 500;">{q_text}</p>
         </div>
     """, unsafe_allow_html=True)
     
