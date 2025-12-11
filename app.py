@@ -1,77 +1,28 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정
-st.set_page_config(page_title="동물로 보는 본능 테스트", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="심층 성향 분석 리포트", page_icon="🧠", layout="centered")
 
-# 2. CSS 스타일링 (다크모드 지원 + 카드 디자인)
+# 2. CSS 스타일링 (다크 모드 호환성 패치)
 st.markdown("""
     <style>
-    /* 전체 폰트 및 배경 설정 */
-    .main-title {
-        font-size: 32px; 
-        font-weight: bold; 
-        text-align: center; 
-        margin-bottom: 10px; 
-        color: #4A4A4A;
-    }
-    .sub-title {
-        font-size: 18px; 
-        text-align: center; 
-        color: #888; 
-        margin-bottom: 30px;
-    }
-    
-    /* 질문 박스 스타일 */
-    .question-box {
-        padding: 30px; 
-        border-radius: 20px; 
-        margin-bottom: 25px;
-        background-color: #ffffff; 
-        border: 3px solid #E0F7FA;
-        color: #333333 !important; /* 다크모드에서도 검은 글씨 강제 */
-        font-size: 20px;
-        font-weight: 500;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    
-    /* 결과 카드 스타일 */
-    .result-card {
-        padding: 30px;
-        border-radius: 20px;
-        background-color: #f9f9f9;
-        border: 2px solid #eee;
-        text-align: center;
-        color: #333333 !important;
+    .main-header {font-size: 30px; font-weight: bold; margin-bottom: 10px;}
+    .sub-header {font-size: 20px; font-weight: bold; margin-top: 20px;}
+    .result-box {
+        padding: 20px; 
+        border-radius: 10px; 
         margin-bottom: 20px;
+        background-color: #f8f9fa; 
+        border: 1px solid #ddd;
+        color: #333333 !important; /* 다크 모드에서도 글자색 검정 고정 */
     }
-    .animal-name {
-        font-size: 28px; 
-        font-weight: bold; 
-        color: #2c3e50; 
-        margin: 15px 0;
-    }
-    .animal-emoji {
-        font-size: 80px;
-    }
-    
-    /* 라디오 버튼 폰트 키우기 */
-    div[role="radiogroup"] > label > div:first-child {
-        display: none;
-    }
-    .stRadio label {
-        font-size: 18px !important;
-        padding: 10px;
-        border-radius: 10px;
-        transition: background-color 0.3s;
-    }
-    .stRadio label:hover {
-        background-color: #f0f2f6;
-    }
+    .highlight {font-weight: bold; color: #1E88E5;}
+    /* 라디오 버튼 폰트 크기 키우기 */
+    .stRadio label {font-size: 18px !important;}
     </style>
 """, unsafe_allow_html=True)
 
-# 3. 세션 상태 초기화 (변수 저장용)
+# 3. 세션 상태 초기화
 if 'current_idx' not in st.session_state:
     st.session_state.current_idx = 0
 if 'lie_score' not in st.session_state:
@@ -81,128 +32,125 @@ if 'main_score' not in st.session_state:
 if 'finished' not in st.session_state:
     st.session_state.finished = False
 
-# 4. 질문 데이터 (총 15문항: 타당성 3 + 본질문 12)
+# 4. 질문 데이터 (25문항)
 questions = [
-    ("사소한 마찰이 생겼을 때, 굳이 상황을 키우기보다 조용히 넘어가는 편이 더 효율적이라고 느낀다.", "main"),
-    ("나는 살면서 단 한 번도, 상황을 모면하기 위해 사소한 거짓말이나 핑계를 대본 적이 없다.", "lie"),
-    ("경제적으로 부담이 될 때는 약속이나 의무도 재조정이 필요하다고 생각한다.", "main"),
-    ("단체에 문제가 생겼을 때, 조직 전체를 위해 개인이 책임을 떠안는 것도 현실적인 선택일 수 있다.", "main"),
-    ("나는 살면서 마음속으로조차 타인을 흉보거나 미워한 적이 단 한 번도 없다.", "lie"),
-    ("경쟁 상황에서는 정보를 활용하여 우위를 점하는 능력도 하나의 실력이라고 생각한다.", "main"),
-    ("가까운 사람의 슬픔을 이해는 하지만, 감정에 오래 머무르는 것은 생산적이지 않다고 느낀다.", "main"),
-    ("아무도 보지 않고 피해도 없다면, 굳이 엄격한 규칙 준수에 얽매일 필요는 없다고 본다.", "main"),
-    ("문제가 커지지 않도록 상황 설명을 조금 조정하는 것은 사회생활의 필요한 기술이다.", "main"),
-    ("결과가 좋다면 과정상의 작은 원칙들은 어느 정도 유연하게 해석될 수 있다고 생각한다.", "main"),
-    ("나는 무례하거나 부당한 대우를 받아도, 화가 나거나 짜증이 난 적이 전혀 없다.", "lie"),
-    ("사회적 피해를 입은 사람에게도, 상황을 피하지 못한 개인의 판단 책임이 일정 부분 있다고 본다.", "main"),
-    ("갈등 상황에서는 진실한 감정을 나누기보다, 상황을 원만하게 빨리 정리하는 것이 더 중요하다.", "main"),
-    ("부탁을 잘 거절하지 못하는 사람에게 일을 요청하는 것도 일종의 자원 활용 능력이다.", "main"),
-    ("제도의 빈틈을 찾아내어 활용하는 것은 불법이 아니라 능력의 한 형태다.", "main")
+    ("1. 사소한 마찰이 생겼을 때, 굳이 상황을 키우기보다 조용히 넘어가는 편이 더 효율적이라고 느낀다.", "main"),
+    ("2. 나는 살면서 단 한 번도, 상황을 모면하기 위해 사소한 거짓말이나 핑계를 대본 적이 없다.", "lie"),
+    ("3. 경제적으로 부담이 될 때는 약속이나 의무도 재조정이 필요하다고 생각한다.", "main"),
+    ("4. 단체에 문제가 생겼을 때, 조직을 위해 개인이 책임을 떠안는 것도 현실적인 선택일 수 있다.", "main"),
+    ("5. 나는 살면서 마음속으로조차 타인을 흉보거나 미워한 적이 단 한 번도 없다.", "lie"),
+    ("6. 경쟁 상황에서는 정보 활용 능력도 하나의 실력이라고 생각한다.", "main"),
+    ("7. 가까운 사람의 슬픔을 이해는 하지만, 감정에 오래 머무르는 것은 생산적이지 않다고 느낀다.", "main"),
+    ("8. 아무도 보지 않는 상황이라면, 굳이 엄격한 규칙 준수에 얽매일 필요는 없다고 본다.", "main"),
+    ("9. 문제가 커지지 않도록 상황 설명을 조정하는 것은 사회생활의 기술 중 하나라고 생각한다.", "main"),
+    ("10. 중요한 기회가 생기면 기존 일정은 어느 정도 조정할 수 있다고 본다.", "main"),
+    ("11. 결과가 좋다면 과정은 어느 정도 유연하게 해석될 수 있다고 생각한다.", "main"),
+    ("12. 나는 무례하거나 부당한 대우를 받아도, 화가 나거나 짜증이 난 적이 전혀 없다.", "lie"),
+    ("13. 사회적 피해는 개인의 판단 책임도 일정 부분 포함된다고 본다.", "main"),
+    ("14. 갈등 상황에서는 진실한 감정보다 상황을 원만하게 정리하는 방식이 더 중요하다고 느낀다.", "main"),
+    ("15. 규칙은 상황에 따라 조정될 수 있다고 생각하는 편이다.", "main"),
+    ("16. 나는 해야 할 일이 있을 때, 귀찮아서 미루고 싶다는 유혹을 느껴본 적이 단 한 번도 없다.", "lie"),
+    ("17. 직장에서는 개인 감정보다 역할 수행이 우선이라고 생각한다.", "main"),
+    ("18. 큰 성과를 얻으려면 일정 수준의 위험은 감수해야 한다고 믿는다.", "main"),
+    ("19. 공개적으로 체면이 손상되는 상황은 이후 관계에서 반드시 정리가 필요하다고 생각한다.", "main"),
+    ("20. 모임에서 분위기를 살리기 위해 어느 정도의 정보 공유는 필요하다고 느낀다.", "main"),
+    ("21. 뜻밖의 이득이 생겼을 때, 그 처리 기준은 상황에 따라 달라질 수 있다고 생각한다.", "main"),
+    ("22. 부탁을 잘 거절하지 못하는 사람에게 요청하는 것도 일종의 협력 방식이라고 본다.", "main"),
+    ("23. 오래된 일에 대해 반복적으로 사과를 요구받는 것은 부담스럽다고 느낀다.", "main"),
+    ("24. 제도의 빈틈을 활용하는 것은 능력의 한 형태라고 받아들일 수 있다.", "main"),
+    ("25. 장기적으로는 과정도 중요하지만, 결국 사람들은 결과로 평가받는다고 생각한다.", "main")
 ]
 
-# 5. 헤더 화면 출력
-st.markdown('<p class="main-title">🐾 숨겨진 본능 찾기 테스트</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">당신의 사회생활 스타일을 동물에 비유한다면?</p>', unsafe_allow_html=True)
+# 제목 표시
+st.title("🧠 성향 및 가치관 심층 분석")
 st.markdown("---")
 
 # --------------------------------------------------------------------------------
-# A. 결과 화면 (5가지 동물 유형 + 히든 유형)
+# 결과 화면
 # --------------------------------------------------------------------------------
 if st.session_state.finished:
     lie_score = st.session_state.lie_score
     main_score = st.session_state.main_score
     
-    # 0. 신뢰도 검증 실패 (히든 유형: 카멜레온)
-    if lie_score >= 11:
-        st.markdown('<div class="result-card">', unsafe_allow_html=True)
-        st.markdown('<div class="animal-emoji">🦎</div>', unsafe_allow_html=True)
-        st.markdown('<p class="animal-name">"속을 알 수 없는 가면 쓴 카멜레온"</p>', unsafe_allow_html=True)
-        st.error(f"⚠️ 타당도 경고: {lie_score}점 (너무 완벽하게 보이려 함)")
+    # 1. 신뢰도 검증 실패 (임계치 16점)
+    if lie_score >= 16:
+        st.error(f"⚠️ **프로파일링 불가 (Invalid Profile)**")
+        st.write(f"**타당도 척도(L-Scale):** {lie_score}점 (임계치 16점 초과)")
+        
         st.markdown("""
-        **"보호색이 너무 짙으시네요!"**
+        ### 🔍 분석: 사회적 바람직성 편향 (Social Desirability Bias)
+        귀하의 응답 패턴에서 **'긍정적 가장(Faking Good)'** 경향이 강하게 감지되었습니다. 
+        이는 타인에게 도덕적이고 완벽한 모습으로 비치고자 하는 무의식적 방어기제가 작동했음을 시사합니다.
         
-        당신은 본심을 철저히 숨기고 완벽한 모습만 보여주려 하고 있습니다.
-        인간이라면 누구나 느끼는 감정조차 부정하셨군요.
-        너무 완벽한 연기는 오히려 의심을 사는 법입니다.
-        
-        **👉 솔직한 모습으로 다시 테스트하면 진짜 본능을 알려드릴게요.**
+        * **현상:** 인간이라면 누구나 겪는 보편적인 실수나 부정적 감정까지 전면 부인하고 있습니다.
+        * **결론:** 현재 데이터로는 귀하의 심층 성향을 정확히 파악할 수 없습니다. 솔직한 태도로 재검사를 권장합니다.
         """)
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    # 1. 결과 분석 성공
+    # 2. 결과 분석 성공
     else:
-        # Level 1: 순수 이타주의 (~21점)
-        if main_score <= 21:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            st.markdown('<div class="animal-emoji">🐶</div>', unsafe_allow_html=True)
-            st.markdown('<p class="animal-name">"눈물 많은 골든 리트리버"</p>', unsafe_allow_html=True)
-            st.success(f"본능 지수: {main_score}점 (순수 공감형)")
-            st.markdown("""
-            **"세상 모든 게 다 내 친구!"**
-            * **특징:** 의심 없고 사람을 너무 좋아합니다. 자신의 이익보다 남의 기분을 먼저 살피는 '평화지킴이'입니다.
-            * **강점:** 당신 주변엔 항상 사람이 끊이지 않습니다. 최고의 친화력을 가졌습니다.
-            * **주의:** 나쁜 의도를 가진 사람에게 '호구' 잡히기 딱 좋습니다. 거절하는 법을 배우세요!
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
+        # A. 하위 구간 (이타주의자)
+        if main_score <= 45:
+            st.success("🌿 **공감적 관계 지향형 (Empathic Altruist)**")
+            st.caption(f"성향 지수: {main_score} / 105")
+            
+            with st.expander("📊 심층 심리 프로파일링 (자세히 보기)", expanded=True):
+                st.markdown("""
+                **1. 핵심 기제: 정서적 전염(Emotional Contagion) 및 거울 뉴런 활성**
+                귀하는 타인의 감정을 자신의 것처럼 느끼는 **정서적 공감(Affective Empathy)** 능력이 매우 발달해 있습니다. 
+                '거울 뉴런(Mirror Neurons)' 시스템이 활발하여 타인의 고통을 목격할 때 본능적인 불편감을 느낍니다.
 
-        # Level 2: 평화주의 (~31점)
-        elif main_score <= 31:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            st.markdown('<div class="animal-emoji">🦫</div>', unsafe_allow_html=True)
-            st.markdown('<p class="animal-name">"상처받지 않는 무던한 카피바라"</p>', unsafe_allow_html=True)
-            st.info(f"본능 지수: {main_score}점 (평화 유지형)")
-            st.markdown("""
-            **"좋은 게 좋은 거지~ (목욕 중)"**
-            * **특징:** 웬만해선 화를 내지 않고 물 흐르듯 살아갑니다. 갈등 상황을 극도로 싫어해 조용히 넘어가는 편입니다.
-            * **강점:** 어떤 조직에 가도 모난 돌이 되지 않고 잘 적응합니다. 멘탈 관리를 잘합니다.
-            * **주의:** 우유부단해 보일 수 있습니다. 정말 중요한 문제에서는 확실한 목소리를 내야 합니다.
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
+                **2. 행동 특성: 친사회적 행동(Prosocial Behavior)**
+                * **우호성(Agreeableness):** Big 5 성격 요인 중 우호성이 매우 높습니다.
+                * **죄책감 민감성:** 도덕적 규범을 어겼을 때 느끼는 내적 처벌(죄책감) 기제가 강력하게 작동합니다.
+                
+                **3. 잠재적 위험: 공감적 고통(Empathic Distress)**
+                타인의 감정에 과도하게 몰입하여 자아(Self)와 타자(Other)의 경계가 모호해질 수 있습니다. 
+                이는 관계에서의 **'심리적 소진(Burnout)'**으로 이어질 위험이 있습니다.
+                
+                **💡 솔루션:** **자기 주장 훈련(Assertiveness Training)**이 필요합니다. 거절은 공격이 아니라 '경계 설정'임을 인지하세요.
+                """)
 
-        # Level 3: 현실적 균형 (~41점)
-        elif main_score <= 41:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            st.markdown('<div class="animal-emoji">🐬</div>', unsafe_allow_html=True)
-            st.markdown('<p class="animal-name">"사회생활 만렙 눈치 빠른 돌고래"</p>', unsafe_allow_html=True)
-            st.info(f"본능 지수: {main_score}점 (현실 적응형)")
-            st.markdown("""
-            **"IQ 점프! 낄끼빠빠의 귀재"**
-            * **특징:** 도덕과 실리 사이에서 줄타기를 아주 잘합니다. 적당히 착하고, 적당히 이기적인 가장 현실적인 타입입니다.
-            * **강점:** 상황 파악이 빠르고 처세술이 좋습니다. 어디서 굶어 죽을 일은 없는 똑똑한 사람입니다.
-            * **주의:** 너무 머리를 굴리다 보면 진심을 의심받을 수 있습니다. 가끔은 계산 없는 모습을 보여주세요.
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
+        # B. 중위 구간 (현실주의자)
+        elif main_score <= 75:
+            st.info("⚖️ **적응적 실용주의자 (Adaptive Pragmatist)**")
+            st.caption(f"성향 지수: {main_score} / 105")
+            
+            with st.expander("📊 심층 심리 프로파일링 (자세히 보기)", expanded=True):
+                st.markdown("""
+                **1. 핵심 기제: 인지적 유연성(Cognitive Flexibility)**
+                귀하는 상황에 따라 도덕적 원칙과 실리적 이익 사이에서 최적의 균형을 찾는 능력이 탁월합니다. 
+                이는 심리학적으로 **'자아 강도(Ego Strength)'**가 건강하여 현실 검증력(Reality Testing)이 뛰어남을 의미합니다.
 
-        # Level 4: 전략적 실리 (~51점)
-        elif main_score <= 51:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            st.markdown('<div class="animal-emoji">🦊</div>', unsafe_allow_html=True)
-            st.markdown('<p class="animal-name">"실속 챙기는 매력적인 붉은 여우"</p>', unsafe_allow_html=True)
-            st.warning(f"본능 지수: {main_score}점 (전략가형)")
-            st.markdown("""
-            **"내 몫은 내가 챙겨야지?"**
-            * **특징:** 원하는 것을 얻기 위해 자신의 매력과 정보를 이용할 줄 압니다. 감정보다는 이득을 먼저 계산합니다.
-            * **강점:** 효율성의 화신입니다. 남들이 감정에 빠져 허우적댈 때, 당신은 이미 목표를 달성하고 퇴근합니다.
-            * **주의:** '여우 같다'는 뒷말이 나올 수 있습니다. 신뢰를 잃지 않도록 선을 지키는 것이 중요합니다.
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
+                **2. 행동 특성: 도구적/정서적 관계의 조화**
+                * **상황 맥락적 사고:** 절대적인 규칙보다는 상황의 맥락(Context)을 중시합니다.
+                * **적응적 대처:** 문제가 발생했을 때 감정에 매몰되지 않고 해결책을 모색하는 **문제 중심 대처(Problem-Focused Coping)**를 선호합니다.
+                
+                **3. 잠재적 위험: 기회주의적 처세**
+                지나친 유연함은 타인에게 '일관성 부재'로 비칠 수 있습니다. 장기적인 신뢰 관계(Rapport) 형성을 위해, 결정적인 순간에는 손해를 감수하더라도 원칙을 지키는 모습을 보여주는 전략이 필요합니다.
+                """)
 
-        # Level 5: 냉철한 승부사 (52점~)
+        # C. 상위 구간 (전략가/마키아벨리즘)
         else:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            st.markdown('<div class="animal-emoji">🦅</div>', unsafe_allow_html=True)
-            st.markdown('<p class="animal-name">"자비 없는 하늘의 제왕 검독수리"</p>', unsafe_allow_html=True)
-            st.error(f"본능 지수: {main_score}점 (지배자형)")
-            st.markdown("""
-            **"감정은 사냥에 방해될 뿐이다."**
-            * **특징:** 목표를 위해서라면 수단과 방법을 가리지 않는 냉혹한 승부사입니다. 타인을 도구로 보는 경향이 강합니다.
-            * **강점:** 위기 상황에서 흔들리지 않는 멘탈과 압도적인 성과 창출 능력을 가졌습니다. 리더의 자질이 있습니다.
-            * **주의:** 높은 곳은 춥고 외롭습니다. 성공 끝에 고립되지 않으려면 주변을 돌아보는 연습이 필요합니다.
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.warning("♟️ **마키아벨리적 전략가 (Machiavellian Strategist)**")
+            st.caption(f"성향 지수: {main_score} / 105 (High Tendency)")
+            
+            with st.expander("📊 심층 심리 프로파일링 (자세히 보기)", expanded=True):
+                st.markdown("""
+                **1. 핵심 기제: 정서적 분리(Emotional Detachment) 및 합리화**
+                귀하는 의사결정 과정에서 감정적 요소를 배제하고 '효율성'을 최우선 가치로 둡니다. 
+                자신의 행동을 논리적으로 정당화하는 **인지적 재구조화(Cognitive Restructuring)** 능력이 매우 뛰어납니다.
+
+                **2. 행동 특성: 도구적 관계(Instrumental Relationship)**
+                * **목적 지향성:** 타인을 감정 교류의 대상보다는 목표 달성을 위한 '자원(Resource)'으로 인식하는 경향이 있습니다.
+                * **낮은 정서적 공감:** 타인의 고통을 인지적(머리)으로는 이해하지만, 정서적(가슴)으로는 크게 동요하지 않습니다. 이는 위기 상황에서 **냉철한 리더십**으로 발현되기도 합니다.
+                
+                **3. 잠재적 위험: 착취적 상호작용**
+                단기적인 성과는 탁월하나, 장기적으로는 **'진정성 결여'**로 인해 사회적 고립을 초래할 수 있습니다. 
+                전술적 공감(Tactical Empathy)을 넘어서, 진심 어린 소통을 연습하는 것이 귀하의 성공을 지속시키는 핵심 열쇠입니다.
+                """)
 
     # 재시작 버튼
-    if st.button("🐾 다른 동물로 다시 태어나기", type="primary"):
+    if st.button("🔄 테스트 다시 하기"):
         st.session_state.current_idx = 0
         st.session_state.lie_score = 0
         st.session_state.main_score = 0
@@ -210,45 +158,26 @@ if st.session_state.finished:
         st.rerun()
 
 # --------------------------------------------------------------------------------
-# B. 질문 진행 화면 (수정됨: 자동 넘기기 적용)
+# 질문 진행 화면
 # --------------------------------------------------------------------------------
 else:
-    # 진행률 표시
     idx = st.session_state.current_idx
     q_text, q_type = questions[idx]
     
+    # 진행률
     progress = int((idx / len(questions)) * 100)
-    st.progress(progress, text=f"본능 탐색 중... {progress}%")
+    st.progress(progress, text=f"Question {idx + 1} / {len(questions)}")
     
-    # 질문 박스
+    # 질문 박스 (다크모드 패치: 글자색 강제 검정)
     st.markdown(f"""
-        <div class="question-box">
-            {q_text}
+        <div class="result-box">
+            <p style="font-size: 18px; text-align: center; margin: 0; font-weight: 500;">{q_text}</p>
         </div>
     """, unsafe_allow_html=True)
-
-    # ---[핵심 변경 사항] 콜백 함수 정의---
-    def handle_click():
-        """라디오 버튼 선택 시 실행되는 함수"""
-        # 현재 질문의 키값(q_{idx})으로 선택된 값을 가져옴
-        current_val = st.session_state[f"q_{idx}"]
-        
-        # 점수 합산
-        if q_type == "lie":
-            st.session_state.lie_score += current_val
-        else:
-            st.session_state.main_score += current_val
-            
-        # 다음 인덱스로 이동하거나 종료 처리
-        if st.session_state.current_idx + 1 < len(questions):
-            st.session_state.current_idx += 1
-        else:
-            st.session_state.finished = True
-
-    # 답변 선택 (라디오 버튼)
-    # on_change=handle_click 을 추가하여 선택 즉시 함수가 실행되게 함
-    st.radio(
-        "솔직하게 선택해주세요 👇",
+    
+    # 답변 선택
+    choice = st.radio(
+        "가장 일치하는 항목을 선택하세요:",
         options=[1, 2, 3, 4, 5],
         format_func=lambda x: {
             1: "전혀 아니다 (1점)",
@@ -257,9 +186,23 @@ else:
             4: "그렇다 (4점)",
             5: "매우 그렇다 (5점)"
         }[x],
-        index=None,         # 초기 선택 없음
-        key=f"q_{idx}",     # 고유 키
-        on_change=handle_click  # 선택 시 자동 실행
+        index=None,
+        key=f"q_{idx}"
     )
     
-    # 더 이상 '다음' 버튼이 필요 없음
+    # 다음 버튼
+    if st.button("다음 문항 >", type="primary", use_container_width=True):
+        if choice is None:
+            st.toast("⚠️ 답변을 선택해주세요!")
+        else:
+            if q_type == "lie":
+                st.session_state.lie_score += choice
+            else:
+                st.session_state.main_score += choice
+            
+            if idx + 1 < len(questions):
+                st.session_state.current_idx += 1
+                st.rerun()
+            else:
+                st.session_state.finished = True
+                st.rerun()
